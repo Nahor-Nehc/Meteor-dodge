@@ -3,6 +3,7 @@ import random
 import sys
 import os
 import PySimpleGUI as sg 
+from animations import Animation, Animation_group
 
 pygame.init()
 pygame.font.init()
@@ -64,7 +65,7 @@ pygame.display.set_caption("Dodge")
 
 MAXHEALTH = 5
 
-def drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pressPlayTime, SHIP, health, score, hpplus, fireParticles, showHitBox, showControls, countTime, fileR):
+def drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pressPlayTime, SHIP, health, score, hpplus, fireParticles, showHitBox, showControls, countTime, fileR, hp_anim, hp_anim_plus):
 
   if state == "pause":
     text = BIGFONT.render("Game Paused", 1, WHITE)
@@ -76,7 +77,7 @@ def drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pr
 
     text = FONT.render("Game Over", 1, WHITE)
     WIN.blit(text, ((WIDTH - text.get_width())/2, PADDING*6))
-    restartText = FONT.render("Restart?", 1, BLACK)
+    restartText = FONT.render("Leaderboard", 1, BLACK)
     pygame.draw.rect(WIN, GREY, pygame.rect.Rect(RBX, RBY, RBWIDTH, RBHEIGHT))
     WIN.blit(restartText, ((WIDTH - restartText.get_width())/2, RBY + PADDING*3/2))
 
@@ -306,7 +307,8 @@ def drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pr
 
     #asteroid
 
-    if countTime >= lastAsteroidTime - (countTime/1000) + DURATION*2:
+    if countTime >= lastAsteroidTime - (countTime/300) + DURATION*2:
+      print((countTime/300) - DURATION*2)
       balancer = random.randint(1, 10)
       if balancer == 1:
         x = ship[0]
@@ -357,6 +359,9 @@ def drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pr
       pygame.draw.rect(WIN, WHITE, pygame.Rect(PADDING - 1, HEIGHT - PADDING - 1 - cText.get_height(), cText.get_width(), cText.get_height()), 1)
 
     #---------------
+    
+    hp_anim.play(WIN, True, True)
+    hp_anim_plus.play(WIN, True, True)
 
 
   pygame.display.flip()
@@ -391,6 +396,20 @@ def shipMove(keys_pressed, ship, SHIP):
   return ship, SHIP
 
 def game():
+
+  hp_anim = Animation(0, 0, "image")
+  
+  hp_anim.set_frames([pygame.transform.scale(pygame.image.load(os.path.join("Assets", "+10.png")), (HPWIDTH*2, HPWIDTH*2))])
+  hp_anim.set_offsets([[0, -1]])
+  
+  hp_anim.duplicate_all_frames(50)
+  
+  hp_anim_plus = Animation(0, 0, "image")
+  
+  hp_anim_plus.set_frames([pygame.transform.scale(pygame.image.load(os.path.join("Assets", "+25.png")), (HPWIDTH*2, HPWIDTH*2))])
+  hp_anim_plus.set_offsets([[0, -1]])
+  
+  hp_anim_plus.duplicate_all_frames(50)
 
   file = open("leaderboard.txt", "r")
   fileR = [x.split(", ") for x in file.read().split("\n")[:-1]]
@@ -508,14 +527,22 @@ def game():
         if health != MAXHEALTH:
           health += 1
           score += 10
+          hp_anim.set_coords(SHIP.x + SHIP.width/2 - HPWIDTH/2, SHIP.y - HPWIDTH - PADDING*2, SHIP.x + SHIP.width/2 - HPWIDTH/2, SHIP.y - HPWIDTH - PADDING*2)
+          print("started")
+          hp_anim.get_coords()
+          hp_anim.start()
         else:
           score += 25
+          hp_anim_plus.set_coords(SHIP.x + SHIP.width/2 - HPWIDTH, SHIP.y - HPWIDTH*2 - PADDING*2, SHIP.x + SHIP.width/2 - HPWIDTH, SHIP.y - HPWIDTH*2 - PADDING*2)
+          print("started")
+          hp_anim_plus.get_coords()
+          hp_anim_plus.start()
 
     keys_pressed = pygame.key.get_pressed()
     if state == "game":
       ship, SHIP = shipMove(keys_pressed, ship, SHIP)
 
-    lastStarTime, stars, lastAsteroidTime, asteroids, score, hpplus, fireParticles = drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pressPlayTime, SHIP, health, score, hpplus, fireParticles, showHitBox, showControls, countTime, fileR)
+    lastStarTime, stars, lastAsteroidTime, asteroids, score, hpplus, fireParticles = drawWindow(state, lastStarTime, stars, ship, lastAsteroidTime, asteroids, pressPlayTime, SHIP, health, score, hpplus, fireParticles, showHitBox, showControls, countTime, fileR, hp_anim, hp_anim_plus)
 
 while True:
   game()
